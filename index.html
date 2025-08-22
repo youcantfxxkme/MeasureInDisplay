@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物理的なサイズに近似した四角形</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Interフォントを適用 */
+        body {
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f4f8; /* 背景色 */
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            background-color: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px;
+        }
+        .info-box {
+            background-color: #e2e8f0; /* 明るい灰色の背景 */
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #4a5568;
+            max-width: 600px;
+            width: 100%;
+        }
+        .warning-message {
+            color: #ef4444; /* 赤色 */
+            font-weight: bold;
+        }
+        .calculation-display {
+            font-family: monospace;
+            background-color: #f7fafc;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e0;
+            white-space: pre-wrap;
+            word-break: break-all;
+            margin-top: 10px;
+        }
+        .input-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            width: 100%;
+        }
+        .input-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+        }
+        .input-row label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .input-row input[type="number"] {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e0;
+            width: 80px;
+            text-align: right;
+        }
+        .input-row input[type="text"] {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e0;
+            width: 80px;
+            text-align: right;
+        }
+        .input-row select {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e0;
+            background-color: white;
+            color: #4a5568;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        .button-group button {
+            padding: 8px 16px;
+            background-color: #10b981; /* 緑色 */
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .button-group button:hover {
+            background-color: #059669; /* 濃い緑色 */
+        }
+        .swap-button {
+            background-color: #f59e0b; /* オレンジ色 */
+        }
+        .swap-button:hover {
+            background-color: #d97706; /* 濃いオレンジ色 */
+        }
+        .add-button, .calculate-dpi-button {
+            background-color: #3b82f6;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            padding: 8px 16px;
+        }
+        .add-button:hover, .calculate-dpi-button:hover {
+            background-color: #2563eb;
+        }
+        .squares-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+        }
+        .square-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 10px;
+        }
+        .square {
+            position: relative;
+            border: 2px solid;
+            border-radius: 10px;
+            transition: width 0.3s ease-out, height 0.3s ease-out; /* サイズ変更時にアニメーションを適用 */
+            cursor: move;
+        }
+        .square-label-input {
+            width: 100px;
+            text-align: center;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            padding: 2px;
+            margin-top: 5px;
+        }
+        .square-controls {
+            display: flex;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        .square-controls button {
+            background-color: #ef4444;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .square-controls button:hover {
+            background-color: #b91c1c;
+        }
+        .square-controls button.clone-button {
+            background-color: #3b82f6;
+        }
+        .square-controls button.clone-button:hover {
+            background-color: #2563eb;
+        }
+        .resize-handle {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background: #cbd5e0;
+            border: 1px solid #4a5568;
+            border-radius: 50%;
+            bottom: -7.5px;
+            right: -7.5px;
+            cursor: nwse-resize;
+        }
+        .square-1 {
+            background-color: #3b82f6; /* 青色 */
+            border-color: #1e40af; /* 濃い青色 */
+        }
+        .square-2 {
+            background-color: #f59e0b; /* オレンジ色 */
+            border-color: #d97706; /* 濃いオレンジ色 */
+        }
+        .square-3 {
+            background-color: #10b981; /* 緑色 */
+            border-color: #059669; /* 濃い緑色 */
+        }
+        .square-4 {
+            background-color: #6366f1; /* 紫色 */
+            border-color: #4338ca; /* 濃い紫色 */
+        }
+
+        /* スナップ機能のためのCSS */
+        .snapped-to-grid {
+            border: 2px dashed #9ca3af;
+        }
+
+        .save-load-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f7fafc;
+            border-radius: 10px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+        }
+
+        .save-load-controls input[type="text"] {
+            width: 100%;
+            max-width: 250px;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e0;
+        }
+
+        .saved-squares-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            background-color: white;
+        }
+
+        .saved-squares-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .saved-squares-list li:hover {
+            background-color: #edf2f7;
+        }
+
+        .saved-squares-list li.selected {
+            background-color: #d1d5db;
+            font-weight: bold;
+        }
+        
+        .list-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .list-buttons button, .file-upload-label {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+            color: white; /* ボタンの文字色を白で統一 */
+            font-weight: bold;
+        }
+
+        .load-button {
+            background-color: #3b82f6;
+        }
+
+        .load-button:hover {
+            background-color: #2563eb;
+        }
+
+        .delete-button {
+            background-color: #ef4444;
+        }
+
+        .delete-button:hover {
+            background-color: #b91c1c;
+        }
+
+        .download-button {
+            background-color: #10b981;
+        }
+        
+        .download-button:hover {
+            background-color: #059669;
+        }
+
+        .file-upload-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-upload-controls input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-label {
+            padding: 6px 12px;
+            background-color: #94a3b8; /* 灰色 */
+        }
+        
+        .file-upload-label:hover {
+            background-color: #64748b; /* 濃い灰色 */
+        }
+        
+        .save-button {
+            padding: 8px 16px;
+            background-color: #3b82f6;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .save-button:hover {
+            background-color: #2563eb;
+        }
+
+        /* レスポンシブデザインのためのメディアクエリ */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            .input-controls, .input-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .input-row input[type="number"], .input-row select {
+                width: 100%;
+            }
+        }
+        
+        /* カスタムメッセージボックスのスタイル */
+        .message-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #4a5568;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+            transform: translateY(-20px);
+            max-width: 300px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .message-box.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .message-box.warning {
+            background-color: #f59e0b; /* オレンジ色 */
+        }
+        
+        .message-box.error {
+            background-color: #ef4444; /* 赤色 */
+        }
+
+        .message-box.success {
+            background-color: #10b981; /* 緑色 */
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1 class="text-3xl font-bold text-gray-800">ブラウザ内物理サイズ近似ツール</h1>
+    <p class="text-sm text-gray-500">（ローカル保存モード）</p>
+
+    <div class="info-box">
+        <p id="screen-info"></p>
+    </div>
+    
+    <div class="squares-container-main">
+        <!-- 5cmの固定サイズで表示される基準の四角形 -->
+        <div class="square-wrapper">
+            <div id="reference-square" class="square square-3"></div>
+            <p class="text-center text-sm mt-2 text-gray-600">5cm x 5cm (基準)</p>
+        </div>
+        <!-- 動的に追加されるユーザー入力の四角形コンテナ -->
+        <div id="user-squares-container" class="squares-container"></div>
+    </div>
+    
+    <div class="info-box">
+        <p>
+            以下のフォームに、表示したい四角形の物理的なサイズを入力してください。
+        </p>
+        <div class="input-controls mt-4">
+            <div class="input-row">
+                <label for="unitSelect">単位:</label>
+                <select id="unitSelect">
+                    <option value="cm">cm</option>
+                    <option value="mm">mm</option>
+                    <option value="inch">inch</option>
+                </select>
+                <div>
+                    <label for="monitorInchInput">モニターのインチサイズ:</label>
+                    <input type="number" id="monitorInchInput" value="27" min="5" step="0.1">
+                    <button id="calculateDpiButton" class="calculate-dpi-button mt-2">DPIを自動計算</button>
+                </div>
+            </div>
+            <div class="input-row">
+                <div>
+                    <label for="customDpiInput">カスタムDPI:</label>
+                    <input type="number" id="customDpiInput" value="96" min="10" step="1">
+                    <select id="dpiHintSelect" class="mt-2 block mx-auto w-full">
+                        <option value="">一般的なDPIから選択...</option>
+                        <option value="109">13インチ FHD (109 DPI)</option>
+                        <option value="109">27インチ WQHD (109 DPI)</option>
+                        <option value="141">15インチ FHD (141 DPI)</option>
+                        <option value="163">13インチ 2K (163 DPI)</option>
+                        <option value="184">27インチ 4K (184 DPI)</option>
+                        <option value="220">MacBook Pro 13 (220 DPI)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-row">
+                <label for="widthInput">幅:</label>
+                <input type="number" id="widthInput" value="5" min="1" step="0.1">
+                <label for="heightInput">高さ:</label>
+                <input type="number" id="heightInput" value="5" min="1" step="0.1">
+                <input type="checkbox" id="lockAspectRatio">
+                <label for="lockAspectRatio">縦横比を固定</label>
+            </div>
+            <div class="button-group">
+                <button id="addSquareButton" class="add-button">四角形を追加</button>
+                <button id="updateButton">更新</button>
+                <button id="swapButton" class="swap-button">入れ替え</button>
+            </div>
+        </div>
+        <p class="mt-4">
+            <span class="warning-message">
+                注意: ブラウザのセキュリティ上の制約により、実際の物理的なピクセル密度を正確に取得することはできません。<br>
+                カスタムDPIはあくまで手動設定であり、正確性を保証するものではありません。
+            </span>
+        </p>
+    </div>
+    
+    <!-- 保存・呼び出し機能のセクション -->
+    <div class="save-load-controls">
+        <h2 class="text-lg font-semibold text-gray-700">四角形の保存と呼び出し</h2>
+        <div class="flex flex-col sm:flex-row items-center gap-2">
+            <input type="text" id="saveNameInput" placeholder="四角形名を入力">
+            <button id="saveButton" class="save-button">現在の四角形を保存</button>
+        </div>
+        <div id="savedSquaresStatus" class="text-sm text-gray-500"></div>
+        <ul id="savedSquaresList" class="saved-squares-list w-full max-w-sm">
+            <!-- 保存された四角形がここに表示されます -->
+        </ul>
+        <div class="list-buttons mb-4">
+            <button id="loadButton" class="load-button">読み込み</button>
+            <button id="deleteButton" class="delete-button">削除</button>
+            <button id="downloadButton" class="download-button">ダウンロード</button>
+        </div>
+        
+        <!-- ファイルアップロード用 -->
+        <div class="file-upload-controls">
+            <input type="file" id="uploadFileInput" accept=".json">
+            <label for="uploadFileInput" class="file-upload-label">JSONを読み込み</label>
+        </div>
+    </div>
+
+    <!-- 計算の詳細を表示するセクション -->
+    <div class="info-box">
+        <h2 class="text-lg font-semibold text-gray-700">計算詳細</h2>
+        <div id="calculation-details" class="calculation-display"></div>
+    </div>
+</div>
+
+<script>
+    // DOM要素の取得
+    const widthInput = document.getElementById('widthInput');
+    const heightInput = document.getElementById('heightInput');
+    const unitSelect = document.getElementById('unitSelect');
+    const lockAspectRatioCheckbox = document.getElementById('lockAspectRatio');
+    const updateButton = document.getElementById('updateButton');
+    const swapButton = document.getElementById('swapButton');
+    const addSquareButton = document.getElementById('addSquareButton');
+    const userSquaresContainer = document.getElementById('user-squares-container');
+    const referenceSquareElement = document.getElementById('reference-square');
+    const detailsElement = document.getElementById('calculation-details');
+    const customDpiInput = document.getElementById('customDpiInput');
+    const dpiHintSelect = document.getElementById('dpiHintSelect');
+    const screenInfoElement = document.getElementById('screen-info');
+    const monitorInchInput = document.getElementById('monitorInchInput');
+    const calculateDpiButton = document.getElementById('calculateDpiButton');
+    const savedSquaresList = document.getElementById('savedSquaresList');
+    const saveNameInput = document.getElementById('saveNameInput');
+    const saveButton = document.getElementById('saveButton');
+    const loadButton = document.getElementById('loadButton');
+    const deleteButton = document.getElementById('deleteButton');
+    const downloadButton = document.getElementById('downloadButton');
+    const uploadFileInput = document.getElementById('uploadFileInput');
+
+    let initialRatio = 1;
+    let activeSquare = null;
+    let isResizing = false;
+    let resizeStartWidth, resizeStartHeight, resizeStartX, resizeStartY;
+    let savedSquares = [];
+
+    // カスタムメッセージボックスを作成するヘルパー関数
+    const createMessageBox = (message, type = 'info') => {
+        let messageBox = document.getElementById('messageBox');
+        if (!messageBox) {
+            messageBox = document.createElement('div');
+            messageBox.id = 'messageBox';
+            messageBox.className = 'message-box';
+            document.body.appendChild(messageBox);
+        }
+
+        // タイプに基づいてクラスを追加
+        messageBox.className = 'message-box'; // 一旦リセット
+        messageBox.classList.add(type);
+        messageBox.textContent = message;
+        
+        // 表示
+        messageBox.classList.add('show');
+        
+        // 3秒後に非表示
+        setTimeout(() => {
+            messageBox.classList.remove('show');
+        }, 3000);
+    };
+
+    // センチメートルをCSSピクセルに変換するヘルパー関数
+    const cmToPx = (cm, dpi) => (cm / 2.54) * dpi;
+    // ミリメートルをCSSピクセルに変換するヘルパー関数
+    const mmToPx = (mm, dpi) => (mm / 25.4) * dpi;
+    // インチをCSSピクセルに変換するヘルパー関数
+    const inchToPx = (inch, dpi) => inch * dpi;
+
+    const units = {
+        cm: { toPx: cmToPx, step: 0.1 },
+        mm: { toPx: mmToPx, step: 1 },
+        inch: { toPx: inchToPx, step: 0.01 }
+    };
+
+    const updateScreenInfo = () => {
+        const pxWidth = window.screen.width;
+        const pxHeight = window.screen.height;
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        const dpi = parseFloat(customDpiInput.value) || 96;
+
+        const diagonalInPx = Math.sqrt(Math.pow(pxWidth, 2) + Math.pow(pxHeight, 2));
+        const diagonalInInch = diagonalInPx / dpi;
+
+        const orientation = (window.innerHeight > window.innerWidth) ? '縦向き' : '横向き';
+
+        screenInfoElement.innerHTML = `
+            <p><strong>現在の画面情報</strong></p>
+            <p>解像度: ${pxWidth}px × ${pxHeight}px (${orientation})</p>
+            <p>対角線: ${diagonalInInch.toFixed(2)}インチ</p>
+            <p class="mt-2">ブラウザウィンドウサイズ: ${window.innerWidth}px x ${window.innerHeight}px</p>
+        `;
+    };
+
+    const updateSquareSize = (square) => {
+        if (!square) return;
+
+        const targetWidthValue = parseFloat(widthInput.value) || 0;
+        const targetHeightValue = parseFloat(heightInput.value) || 0;
+        const unit = unitSelect.value;
+        const devicePixelRatio = window.devicePixelRatio || 1;
+        const dpi = parseFloat(customDpiInput.value) || 96;
+
+        const convertToCm = (value, currentUnit) => {
+            switch (currentUnit) {
+                case 'mm': return value / 10;
+                case 'inch': return value * 2.54;
+                default: return value;
+            }
+        };
+        
+        const targetWidthCm = convertToCm(targetWidthValue, unit);
+        const targetHeightCm = convertToCm(targetHeightValue, unit);
+
+        const cssWidth = cmToPx(targetWidthCm, dpi) / devicePixelRatio;
+        const cssHeight = cmToPx(targetHeightCm, dpi) / devicePixelRatio;
+
+        square.style.width = `${cssWidth}px`;
+        square.style.height = `${cssHeight}px`;
+        square.dataset.width = targetWidthValue;
+        square.dataset.height = targetHeightValue;
+        square.dataset.unit = unit;
+        
+        // 基準四角形の更新
+        const referenceWidthCm = 5;
+        const referenceHeightCm = 5;
+        const referenceCssWidth = cmToPx(referenceWidthCm, dpi) / devicePixelRatio;
+        const referenceCssHeight = cmToPx(referenceHeightCm, dpi) / devicePixelRatio;
+        if (referenceSquareElement) {
+            referenceSquareElement.style.width = `${referenceCssWidth}px`;
+            referenceSquareElement.style.height = `${referenceCssHeight}px`;
+        }
+
+        // 計算詳細の更新
+        if (detailsElement) {
+            detailsElement.textContent = `
+ターゲットサイズ: ${targetWidthValue.toFixed(2)}${unit} x ${targetHeightValue.toFixed(2)}${unit}
+基準サイズ: ${referenceWidthCm.toFixed(2)}cm x ${referenceHeightCm.toFixed(2)}cm
+
+-- 計算に使用した値 --
+devicePixelRatio: ${devicePixelRatio}
+DPI: ${dpi}
+
+-- 計算結果 --
+入力四角形CSS幅: ${cssWidth.toFixed(2)}px
+入力四角形CSS高さ: ${cssHeight.toFixed(2)}px
+基準四角形CSS幅: ${referenceCssWidth.toFixed(2)}px
+基準四角形CSS高さ: ${referenceCssHeight.toFixed(2)}px
+            `;
+        }
+    };
+
+    const updateInputsFromSquare = (square) => {
+        const width = parseFloat(square.dataset.width);
+        const height = parseFloat(square.dataset.height);
+        const unit = square.dataset.unit;
+        
+        widthInput.value = isNaN(width) ? "" : width.toFixed(2);
+        heightInput.value = isNaN(height) ? "" : height.toFixed(2);
+        unitSelect.value = unit || 'cm';
+
+        // 縦横比を更新
+        if (lockAspectRatioCheckbox.checked && width > 0 && height > 0) {
+            initialRatio = width / height;
+        }
+    };
+
+    const updateRatio = (changedInput, square = activeSquare) => {
+        if (!square) return;
+
+        const widthValue = parseFloat(widthInput.value) || 0;
+        const heightValue = parseFloat(heightInput.value) || 0;
+        
+        if (lockAspectRatioCheckbox.checked && widthValue > 0 && heightValue > 0) {
+            if (changedInput === 'width') {
+                heightInput.value = (widthValue / initialRatio).toFixed(2);
+            } else if (changedInput === 'height') {
+                widthInput.value = (heightValue * initialRatio).toFixed(2);
+            }
+        }
+        updateSquareSize(square);
+    };
+
+    const swapDimensions = () => {
+        const tempValue = widthInput.value;
+        widthInput.value = heightInput.value;
+        heightInput.value = tempValue;
+        if (lockAspectRatioCheckbox.checked) {
+            const newWidth = parseFloat(widthInput.value);
+            const newHeight = parseFloat(heightInput.value);
+            if (newHeight > 0) {
+                initialRatio = newWidth / newHeight;
+            }
+        }
+        updateSquareSize(activeSquare);
+    };
+    
+    const createSquare = (initialWidth, initialHeight) => {
+        const squareWrapper = document.createElement('div');
+        squareWrapper.className = 'square-wrapper';
+
+        const square = document.createElement('div');
+        const colorClass = `square-${(userSquaresContainer.children.length % 4) + 1}`;
+        square.className = `square ${colorClass}`;
+        square.id = `square-${Date.now()}`;
+        
+        square.style.width = `${initialWidth}px`;
+        square.style.height = `${initialHeight}px`;
+
+        const labelInput = document.createElement('input');
+        labelInput.type = 'text';
+        labelInput.className = 'square-label-input';
+        labelInput.placeholder = 'ラベル';
+
+        const squareControls = document.createElement('div');
+        squareControls.className = 'square-controls';
+        
+        const cloneButton = document.createElement('button');
+        cloneButton.textContent = '複製';
+        cloneButton.className = 'clone-button';
+        cloneButton.addEventListener('click', () => {
+            const newSquare = createSquare(parseFloat(square.style.width), parseFloat(square.style.height));
+            const newLabel = squareWrapper.querySelector('.square-label-input').value;
+            if (newLabel) {
+                newSquare.parentElement.querySelector('.square-label-input').value = newLabel;
+            }
+            activeSquare = newSquare;
+            updateInputsFromSquare(activeSquare);
+        });
+
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = '削除';
+        deleteButton.addEventListener('click', () => {
+            userSquaresContainer.removeChild(squareWrapper);
+            if (activeSquare && activeSquare.id === square.id) {
+                activeSquare = userSquaresContainer.children.length > 0 ? userSquaresContainer.children[0].querySelector('.square') : null;
+                if (activeSquare) {
+                    updateInputsFromSquare(activeSquare);
+                }
+            }
+            updateSquareSize(null);
+        });
+
+        squareControls.appendChild(cloneButton);
+        squareControls.appendChild(deleteButton);
+        
+        squareWrapper.appendChild(square);
+        squareWrapper.appendChild(labelInput);
+        squareWrapper.appendChild(squareControls);
+        userSquaresContainer.appendChild(squareWrapper);
+
+        // リサイズハンドルを追加
+        const resizeHandle = document.createElement('div');
+        resizeHandle.className = 'resize-handle';
+        square.appendChild(resizeHandle);
+        
+        // イベントリスナー
+        square.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            activeSquare = square;
+            updateInputsFromSquare(square);
+        });
+        resizeHandle.addEventListener('mousedown', startResize);
+
+        return square;
+    };
+
+    const startResize = (e) => {
+        e.stopPropagation();
+        isResizing = true;
+        resizeStartWidth = parseFloat(activeSquare.style.width);
+        resizeStartHeight = parseFloat(activeSquare.style.height);
+        resizeStartX = e.clientX;
+        resizeStartY = e.clientY;
+        document.addEventListener('mousemove', doResize);
+        document.addEventListener('mouseup', stopResize);
+    };
+    
+    const doResize = (e) => {
+        if (!isResizing) return;
+        const deltaX = e.clientX - resizeStartX;
+        const deltaY = e.clientY - resizeStartY;
+        
+        let newWidth = resizeStartWidth + deltaX;
+        let newHeight = resizeStartHeight + deltaY;
+
+        if (lockAspectRatioCheckbox.checked) {
+            const currentRatio = resizeStartWidth / resizeStartHeight;
+            newHeight = newWidth / currentRatio;
+        }
+
+        // スナップ機能
+        const snapSize = 5; // スナップ単位を5ピクセルに設定
+        newWidth = Math.round(newWidth / snapSize) * snapSize;
+        newHeight = Math.round(newHeight / snapSize) * snapSize;
+
+        activeSquare.style.width = `${newWidth}px`;
+        activeSquare.style.height = `${newHeight}px`;
+        updateInputsFromSquare(activeSquare);
+    };
+    
+    const stopResize = () => {
+        isResizing = false;
+        document.removeEventListener('mousemove', doResize);
+        document.removeEventListener('mouseup', stopResize);
+    };
+
+    // DPI自動計算関数
+    const calculateDpi = () => {
+        const monitorInch = parseFloat(monitorInchInput.value);
+        if (isNaN(monitorInch) || monitorInch <= 0) {
+            createMessageBox('有効なモニターのインチサイズを入力してください。', 'warning');
+            return;
+        }
+        const pxWidth = window.screen.width;
+        const pxHeight = window.screen.height;
+        const diagonalPixels = Math.sqrt(Math.pow(pxWidth, 2) + Math.pow(pxHeight, 2));
+        const calculatedDpi = diagonalPixels / monitorInch;
+        customDpiInput.value = calculatedDpi.toFixed(2);
+        updateSquareSize(activeSquare);
+        updateScreenInfo();
+    };
+
+    // 保存された四角形のリストをレンダリングする関数
+    const renderSavedSquares = () => {
+        savedSquaresList.innerHTML = '';
+        savedSquares.forEach((item, index) => {
+            const li = document.createElement('li');
+            li.dataset.index = index;
+            li.innerHTML = `
+                <span>${item.name} (${item.width}${item.unit} x ${item.height}${item.unit})</span>
+                <span class="text-xs text-gray-400">DPI: ${item.dpi}</span>
+            `;
+            li.addEventListener('click', () => {
+                savedSquaresList.querySelectorAll('li').forEach(el => el.classList.remove('selected'));
+                li.classList.add('selected');
+            });
+            savedSquaresList.appendChild(li);
+        });
+    };
+
+    // ローカルストレージからデータをロード
+    const loadSavedSquares = () => {
+        const data = localStorage.getItem('savedSquares');
+        if (data) {
+            try {
+                savedSquares = JSON.parse(data);
+                if (!Array.isArray(savedSquares)) {
+                    savedSquares = [];
+                    createMessageBox('ローカルストレージのデータが不正です。', 'error');
+                }
+            } catch (e) {
+                savedSquares = [];
+                createMessageBox('ローカルストレージのデータを読み込めませんでした。', 'error');
+            }
+            renderSavedSquares();
+        }
+    };
+    
+    // データをローカルストレージに保存
+    const saveToLocalStorage = () => {
+        localStorage.setItem('savedSquares', JSON.stringify(savedSquares));
+        renderSavedSquares();
+    };
+
+    // データの保存
+    const saveSquare = () => {
+        let saveName = saveNameInput.value.trim();
+        if (!activeSquare) {
+            createMessageBox('保存する四角形がありません。', 'warning');
+            return;
+        }
+        
+        const width = parseFloat(activeSquare.dataset.width) || 0;
+        const height = parseFloat(activeSquare.dataset.height) || 0;
+        const unit = activeSquare.dataset.unit || 'cm';
+        const dpi = parseFloat(customDpiInput.value) || 96;
+        
+        if (!saveName) {
+            saveName = `四角形_${width.toFixed(2)}x${height.toFixed(2)}_${unit}`;
+        }
+        
+        // 重複チェック
+        const existingIndex = savedSquares.findIndex(sq => sq.name === saveName);
+
+        const squareData = {
+            name: saveName,
+            width: width,
+            height: height,
+            unit: unit,
+            dpi: dpi,
+        };
+
+        if (existingIndex !== -1) {
+            // 既存のデータを更新
+            savedSquares[existingIndex] = squareData;
+            createMessageBox(`四角形 "${saveName}" を更新しました。`, 'success');
+        } else {
+            // 新しいデータを追加
+            savedSquares.push(squareData);
+            createMessageBox(`四角形 "${saveName}" を保存しました。`, 'success');
+        }
+
+        saveToLocalStorage();
+        saveNameInput.value = '';
+    };
+
+    // データの読み込み
+    const loadSquare = () => {
+        const selectedLi = savedSquaresList.querySelector('li.selected');
+        if (!selectedLi) {
+            createMessageBox('読み込む四角形をリストから選択してください。', 'warning');
+            return;
+        }
+
+        const index = parseInt(selectedLi.dataset.index);
+        const squareData = savedSquares[index];
+
+        if (squareData) {
+            widthInput.value = squareData.width;
+            heightInput.value = squareData.height;
+            unitSelect.value = squareData.unit;
+            customDpiInput.value = squareData.dpi;
+
+            if (activeSquare) {
+                 updateSquareSize(activeSquare);
+            } else {
+                 const newSquare = createSquare(50, 50); // ダミーサイズで作成
+                 activeSquare = newSquare;
+                 updateSquareSize(activeSquare); // 正しいサイズに更新
+            }
+            createMessageBox(`四角形 "${squareData.name}" を読み込みました。`, 'success');
+        }
+    };
+
+    // データの削除
+    const deleteSquare = () => {
+        const selectedLi = savedSquaresList.querySelector('li.selected');
+        if (!selectedLi) {
+            createMessageBox('削除する四角形をリストから選択してください。', 'warning');
+            return;
+        }
+
+        const index = parseInt(selectedLi.dataset.index);
+        const name = savedSquares[index].name;
+
+        savedSquares.splice(index, 1);
+        saveToLocalStorage();
+        createMessageBox(`四角形 "${name}" を削除しました。`, 'success');
+    };
+
+    // JSONファイルのダウンロード
+    const downloadSquares = () => {
+        if (savedSquares.length === 0) {
+            createMessageBox('保存された四角形がありません。', 'warning');
+            return;
+        }
+
+        const filename = 'squares.json';
+        const data = JSON.stringify(savedSquares, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        createMessageBox('JSONファイルをダウンロードしました。', 'success');
+    };
+
+    // JSONファイルの読み込み
+    const uploadSquares = (event) => {
+        const file = event.target.files[0];
+        if (!file) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const loadedData = JSON.parse(e.target.result);
+                if (Array.isArray(loadedData)) {
+                    savedSquares = loadedData;
+                    saveToLocalStorage();
+                    createMessageBox('JSONファイルから四角形データを読み込みました。', 'success');
+                } else {
+                    createMessageBox('不正なJSONファイル形式です。配列形式のデータが必要です。', 'error');
+                }
+            } catch (error) {
+                createMessageBox('JSONファイルの読み込みに失敗しました。', 'error');
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    // イベントリスナーの設定
+    widthInput.addEventListener('input', () => updateRatio('width'));
+    heightInput.addEventListener('input', () => updateRatio('height'));
+    unitSelect.addEventListener('change', () => {
+        const currentUnit = unitSelect.value;
+        const step = units[currentUnit].step;
+        widthInput.step = step;
+        heightInput.step = step;
+        updateInputsFromSquare(activeSquare);
+    });
+    lockAspectRatioCheckbox.addEventListener('change', () => {
+        if (lockAspectRatioCheckbox.checked) {
+            const widthValue = parseFloat(widthInput.value);
+            const heightValue = parseFloat(heightInput.value);
+            if (heightValue > 0) {
+                initialRatio = widthValue / heightValue;
+            }
+        }
+    });
+    customDpiInput.addEventListener('input', () => {
+        updateSquareSize(activeSquare);
+        updateScreenInfo();
+    });
+    dpiHintSelect.addEventListener('change', (e) => {
+        if (e.target.value) {
+            customDpiInput.value = e.target.value;
+            updateSquareSize(activeSquare);
+            updateScreenInfo();
+        }
+    });
+    updateButton.addEventListener('click', () => updateSquareSize(activeSquare));
+    swapButton.addEventListener('click', swapDimensions);
+    addSquareButton.addEventListener('click', () => {
+        const newSquare = createSquare(50, 50);
+        activeSquare = newSquare;
+        updateInputsFromSquare(activeSquare);
+    });
+    calculateDpiButton.addEventListener('click', calculateDpi);
+    saveButton.addEventListener('click', saveSquare);
+    loadButton.addEventListener('click', loadSquare);
+    deleteButton.addEventListener('click', deleteSquare);
+    downloadButton.addEventListener('click', downloadSquares);
+    uploadFileInput.addEventListener('change', uploadSquares);
+
+    window.addEventListener('resize', updateScreenInfo);
+
+    // Enterキーが押されたときにも更新
+    widthInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { updateSquareSize(activeSquare); } });
+    heightInput.addEventListener('keydown', (event) => { if (event.key === 'Enter') { updateSquareSize(activeSquare); } });
+
+    // 初期化処理
+    const init = () => {
+        loadSavedSquares();
+        const newSquare = createSquare(50, 50);
+        activeSquare = newSquare;
+        updateSquareSize(activeSquare);
+        updateScreenInfo();
+    };
+
+    init();
+</script>
+
+</body>
+</html>
